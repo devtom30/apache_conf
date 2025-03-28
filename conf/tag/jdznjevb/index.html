@@ -22,7 +22,7 @@
     if(Hls.isSupported()) {
         // var hls = new Hls();
         const time = new Date().getTime();
-        hls.loadSource('http://localhost:8000/play?' + time);
+        hls.loadSource('/play?' + time);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED,function() {
             video.play();
