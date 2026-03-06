@@ -1,0 +1,3 @@
+artist_name = "The artist"
+playlist_name = "The playlist"
+tracks = ["track01", "track02", "track03", "track04", "track05", "track06"]

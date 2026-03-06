@@ -1,0 +1,112 @@
+<html>
+<head>
+    <style>
+        .playlist-item {
+            padding: 10px;
+            border: 1px solid black;
+            margin-top: 10px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .playlist-item:hover {
+            background-color: lightgray;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.js" integrity="sha512-+k1pnlgt4F1H8L7t3z95o3/KO+o78INEcXTbnoJQ/F2VqDVhWoaiVml/OEHv9HsVgxUaVW+IbiZPUJQfF/YxZw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- Or if you want a more recent canary version -->
+<!-- <script src="https://cdn.jsdelivr.net/npm/hls.js@canary"></script> -->
+<video id="video" controls></video>
+<div id="playlist">
+    <div id="playlist-items">
+    </div>
+</div>
+<div id="error-message"></div>
+<script>
+    function play_track(div) {
+        if(Hls.isSupported()) {
+            // var hls = new Hls();
+            const time = new Date().getTime();
+            hls.loadSource('/track/' + div.dataset.track_id + '?' + time);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED,function() {
+                video.play();
+            });
+            hls.on(Hls.Events.MEDIA_ATTACHED, function () {
+                video.play();
+            });
+        }
+            // hls.js is not supported on platforms that do not have Media Source Extensions (MSE) enabled.
+            // When the browser has built-in HLS support (check using `canPlayType`), we can provide an HLS manifest (i.e. .m3u8 URL) directly to the video element throught the `src` property.
+            // This is using the built-in support of the plain video element, without using hls.js.
+            // Note: it would be more normal to wait on the 'canplay' event below however on Safari (where you are most likely to find built-in HLS support) the video.src URL must be on the user-driven
+        // white-list before a 'canplay' event will be emitted; the last video event that can be reliably listened-for when the URL is not on the white-list is 'loadedmetadata'.
+        else if (video.canPlayType('application/vnd.apple.mpegurl') && false) {
+            video.src = 'https://video-dev.github.io/streams/x36xhzz/x36xhzz.m3u8';
+            video.addEventListener('loadedmetadata',function() {
+                video.play();
+            });
+        }
+    }
+
+    const match = document.cookie.match(new RegExp('(^| )dop_token=([^;]+)'));
+    let dop_token = match ?
+        match[2]:
+        "dummy";
+    const hls = new Hls({
+        xhrSetup: xhr => {
+            xhr.setRequestHeader('dop_token', dop_token);
+        }
+    });
+
+    const errMsg = document.getElementById("error-message");
+    errMsg.textContent = "";
+    fetch('/playlist', {
+        headers: {
+            "Content-Type": "application/json",
+            "dop_token": dop_token,
+        },
+    })
+        .then((res) => {
+            if (!res.ok) {
+                throw new Error("Network Problem");
+            }
+            return res.json();
+        })
+        .then((json) => {
+            console.log(json);
+            const playlist = document.getElementById("playlist-items");
+            playlist.innerHTML = "";
+            let i = 1;
+
+            json.tracks.forEach(element => {
+                const div = document.createElement("div");
+                div.innerHTML = element;
+                div.className = "playlist-item";
+                div.dataset.track_id = i.toString();
+                div.onclick = () => {
+                    play_track(div);
+                }
+                playlist.appendChild(div);
+                i++;
+            });
+        })
+        .catch(() => {
+            errMsg.textContent =
+                "Cannot Download Restricted Content!";
+        });
+    var video = document.getElementById('video');
+</script>
+</body>
+</html>
